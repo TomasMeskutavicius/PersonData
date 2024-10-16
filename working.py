@@ -10,11 +10,65 @@ app = FastAPI()
 def home():
     return {"Data": "Testing"}
 
-@app.get("/get-details")
-def get_details(*, name: str, LastName: str):
+@app.get("/get-all-employees")
+def get_details():
     con = sqlite3.connect("telephones.db")
     cur = con.cursor()
-    cur.execute("select * from telephones where Name=? AND LastName=?", (name,LastName))
+    cur.execute("select * from telephones")
+    data = cur.fetchall()
+    cur.close()
+    con.close()
+
+    if not data:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No persons found, DB is empty")
+    else:
+        columns = [col[0] for col in cur.description]
+        data = [dict(zip(columns, row)) for row in data]
+        return Response(content=json.dumps(data), media_type="application/json")
+
+@app.get("/get-all-names")
+def get_details():
+    con = sqlite3.connect("telephones.db")
+    cur = con.cursor()
+    cur.execute("select Name from telephones")
+    data = cur.fetchall()
+    cur.close()
+    con.close()
+
+    if not data:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No person names found in DB")
+    else:
+        columns = [col[0] for col in cur.description]
+        data = [dict(zip(columns, row)) for row in data]
+        return Response(content=json.dumps(data), media_type="application/json")
+
+@app.get("/get-all-last-names")
+def get_details():
+    con = sqlite3.connect("telephones.db")
+    cur = con.cursor()
+    cur.execute("select LastName from telephones")
+    data = cur.fetchall()
+    cur.close()
+    con.close()
+
+    if not data:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No person last names found in DB")
+    else:
+        columns = [col[0] for col in cur.description]
+        data = [dict(zip(columns, row)) for row in data]
+        return Response(content=json.dumps(data), media_type="application/json")
+
+@app.get("/get-details")
+def get_details(*, name: Optional[str]=None, LastName: Optional[str]=None):
+    con = sqlite3.connect("telephones.db")
+    cur = con.cursor()
+    if LastName is None and name is not None:
+        cur.execute("select * from telephones where Name=?", (name,))
+    elif LastName is not None and name is not None:
+        cur.execute("select * from telephones where Name=? AND LastName=?", (name,LastName))
+    elif LastName is not None and name is None:
+        cur.execute("select * from telephones where LastName=?", (LastName,))
+
     data = cur.fetchall()
     cur.close()
     con.close()
@@ -85,7 +139,7 @@ def update_person(
         #    cur.executemany("UPDATE telephones SET WarrEndDate=? WHERE Name=? AND LastName=?", person_to_update)
         if IMEI2 is not None:
             person_to_update = [(IMEI2, Name, LastName)]
-            cur.executemany("UPDATE telephones SET SIMEI2_N=? WHERE Name=? AND LastName=?", person_to_update)
+            cur.executemany("UPDATE telephones SET IMEI2=? WHERE Name=? AND LastName=?", person_to_update)
 
     con.commit()
     con.close()
@@ -110,3 +164,62 @@ def delete_person(Name: str, LastName: str):
 @app.get("/about")
 def about():
     return {"Tomo PIRMASIS API!!!!!"}
+
+
+@app.get("/get-all-christmas-names")
+def get_details():
+    con = sqlite3.connect("christmas.db")
+    cur = con.cursor()
+    
+    cur.execute("CREATE table IF NOT EXISTS  christmas(Name, LastName, PickedPerson)")
+
+
+   # data = [
+    #    ("Tomas", "Meskutavicius",""),
+    #    ("Justina", "Meskutaviciene",""),
+    #    ("Jelena", "Meskutaviciene",""),
+    #    ("Gintaras", "Meskutavicius",""),
+    #    ("Neila", "Meskutaviciute",""),
+#
+    #    ("Vasilijus", "Dobrovolskis",""),
+    #    ("Tatjana", "Dobrovolskiene",""),
+#
+    #    ("Gintas", "Dobrovolskis",""),
+    #    ("Kristina", "Dobrovolskiene",""),
+    #    ("Dovydas", "Dobrovolskis",""),
+    #    ("Goda", "Dobrovolskyte",""),
+    #    ]
+    #cur.executemany("INSERT INTO christmas VALUES(?, ?,?)", data)
+   # con.commit()
+
+    cur.execute("select Name from christmas")
+    data = cur.fetchall()
+    cur.close()
+    con.close()
+
+    if not data:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No person names found in DB")
+    else:
+        columns = [col[0] for col in cur.description]
+        data = [dict(zip(columns, row)) for row in data]
+        return Response(content=json.dumps(data), media_type="application/json")
+
+
+@app.get("/get-all-christmas-last-names")
+def get_details():
+    con = sqlite3.connect("christmas.db")
+    cur = con.cursor()
+    
+    cur.execute("CREATE table IF NOT EXISTS  christmas(Name, LastName, PickedPerson)")
+
+    cur.execute("select LastName from christmas")
+    data = cur.fetchall()
+    cur.close()
+    con.close()
+
+    if not data:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No person names found in DB")
+    else:
+        columns = [col[0] for col in cur.description]
+        data = [dict(zip(columns, row)) for row in data]
+        return Response(content=json.dumps(data), media_type="application/json")
